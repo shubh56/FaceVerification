@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from flask_restful import Resource
 
-class WorkerVerification(Resource):
+class FaceVerification(Resource):
     def __init__(self):
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
@@ -25,39 +25,22 @@ class WorkerVerification(Resource):
 
     def post(self):
         try:
-            # Get images from the request
             image_data1 = request.files['image1'].read()
-            image_data2 = request.files['image2'].read()
-
-            # Decode the images
+            image_data2 = request.files['image2'].read() 
             image1 = cv2.imdecode(np.frombuffer(image_data1, np.uint8), cv2.IMREAD_COLOR)
             image2 = cv2.imdecode(np.frombuffer(image_data2, np.uint8), cv2.IMREAD_COLOR)
-
-            # Detect keypoints and descriptors for faces in both images
             faces1, keypoints1, descriptors1 = self.detect_face_keypoints(image1)
             faces2, keypoints2, descriptors2 = self.detect_face_keypoints(image2)
-
-            # Check if faces are detected in both images
             if not keypoints1 or not keypoints2:
                 print('No face detected in one or both images')
                 return jsonify({'result': 'No face detected in one or both images'})
-
-            # Initialize keypoint matcher
             matcher = cv2.BFMatcher()
-
-            # Match descriptors
-            matches = matcher.knnMatch(descriptors1[0], descriptors2[0], k=2)  # Assuming there's only one face in each image
-
-            # Apply ratio test to find good matches
+            matches = matcher.knnMatch(descriptors1[0], descriptors2[0], k=2)   
             good_matches = []
             for m, n in matches:
                 if m.distance < 0.75 * n.distance:
                     good_matches.append(m)
-
-            # Minimum number of matches for similarity
-            min_matches = 23
-            # Adjust this based on the number of matches you want to consider
-        
+            min_matches = 20
             if len(good_matches) > min_matches:
                 print(min_matches)
                 result = {'result': 'Similarity in facial features detected'}
